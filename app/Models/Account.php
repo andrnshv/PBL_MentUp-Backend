@@ -2,11 +2,28 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Sanctum\HasApiTokens;
 
-class Account extends Model
+class Account extends Authenticatable
 {
-    protected $fillable = ['nama', 'password'];
+    use HasApiTokens;
 
-    protected $hidden = ['password'];
+    protected $table = 'accounts';
+
+    protected $fillable = [
+        'fullname',
+        'email',
+        'username',
+        'password',
+        'role',
+    ];
+
+    protected $hidden = [
+        'password',
+    ];
+
+    protected $casts = [
+        'password' => 'hashed',
+    ];
 }

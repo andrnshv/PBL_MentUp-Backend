@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Filament\Resources\Accounts\Pages;
+namespace App\Filament\Resources\MentorCvs\Pages;
 
-use App\Filament\Resources\Accounts\AccountResource;
+use App\Filament\Resources\MentorCvs\MentorCvResource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
-class EditAccount extends EditRecord
+class EditMentorCv extends EditRecord
 {
-    protected static string $resource = AccountResource::class;
+    protected static string $resource = MentorCvResource::class;
 
     protected function getHeaderActions(): array
     {
