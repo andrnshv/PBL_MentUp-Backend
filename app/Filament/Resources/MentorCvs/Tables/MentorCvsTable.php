@@ -2,11 +2,12 @@
 
 namespace App\Filament\Resources\MentorCvs\Tables;
 
+use App\Models\MentorCv;
 use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\DB;
 
 class MentorCvsTable
 {
@@ -20,14 +21,8 @@ class MentorCvsTable
                     ->sortable(),
 
                 TextColumn::make('email')
+                    ->label('Email')
                     ->searchable(),
-
-                TextColumn::make('cv_url')
-                    ->label('File CV')
-                    ->formatStateUsing(fn ($state) => $state ? 'Lihat CV' : '-')
-                    ->url(fn ($record) => $record->cv_url)
-                    ->openUrlInNewTab()
-                    ->color('info'),
 
                 TextColumn::make('status')
                     ->badge()
@@ -51,38 +46,73 @@ class MentorCvsTable
                         'rejected' => 'Rejected',
                     ]),
             ])
-            ->recordActions([
+            ->actions([
+                /*
+                |--------------------------------------------------------------------------
+                | Preview PDF CV
+                |--------------------------------------------------------------------------
+                */
+
+                Action::make('view_pdf')
+                    ->label('Lihat CV')
+                    ->icon('heroicon-o-document-magnifying-glass')
+                    ->color('info')
+                    ->modalHeading('Pratinjau CV Mentor')
+                    ->modalWidth('7xl')
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Tutup')
+                    // Memastikan isi modal tidak terpotong oleh padding internal Filament
+                    ->modalContent(
+                        fn (MentorCv $record) => view(
+                            'filament.components.pdf-viewer',
+                            ['url' => $record->cv_url]
+                        )
+                    ),
+
+                /*
+                |--------------------------------------------------------------------------
+                | Approve Mentor
+                |--------------------------------------------------------------------------
+                */
                 Action::make('approve')
                     ->label('Konfirmasi')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->visible(fn ($record) => $record->status === 'pending')
+                    ->visible(fn (MentorCv $record) => $record->status === 'pending')
                     ->requiresConfirmation()
-                    ->modalHeading('Konfirmasi CV Mentor')
-                    ->modalDescription('Apakah kamu yakin ingin menyetujui CV mentor ini?')
-                    ->modalSubmitActionLabel('Ya, Setujui')
-                    ->action(function ($record) {
-                        DB::table('mentor_cv')
-                            ->where('id', $record->id)
-                            ->update(['status' => 'approved']);
+                    ->modalHeading('Setujui Mentor')
+                    ->modalDescription('Apakah Anda yakin ingin menyetujui pendaftaran mentor ini?')
+                    ->action(function (MentorCv $record) {
+                        $record->update(['status' => 'approved']);
+
+                        Notification::make()
+                            ->title('Mentor berhasil disetujui')
+                            ->success()
+                            ->send();
                     }),
 
+                /*
+                |--------------------------------------------------------------------------
+                | Reject Mentor
+                |--------------------------------------------------------------------------
+                */
                 Action::make('reject')
                     ->label('Tolak')
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
-                    ->visible(fn ($record) => $record->status === 'pending')
+                    ->visible(fn (MentorCv $record) => $record->status === 'pending')
                     ->requiresConfirmation()
-                    ->modalHeading('Tolak CV Mentor')
-                    ->modalDescription('Apakah kamu yakin ingin menolak CV mentor ini?')
-                    ->modalSubmitActionLabel('Ya, Tolak')
-                    ->action(function ($record) {
-                        DB::table('mentor_cv')
-                            ->where('id', $record->id)
-                            ->update(['status' => 'rejected']);
+                    ->modalHeading('Tolak Mentor')
+                    ->modalDescription('Tindakan ini akan menolak pendaftaran mentor. Lanjutkan?')
+                    ->action(function (MentorCv $record) {
+                        $record->update(['status' => 'rejected']);
+
+                        Notification::make()
+                            ->title('Mentor telah ditolak')
+                            ->danger()
+                            ->send();
                     }),
             ])
-            ->toolbarActions([]) // kosong — tidak ada bulk action
             ->defaultSort('created_at', 'desc');
     }
 }
